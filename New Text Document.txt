@@ -1,0 +1,62 @@
+document.addEventListener("keydown", function (event) {
+    if (event.ctrlKey && event.shiftKey && event.code === "KeyM") {
+        console.log("Tổ hợp phím Ctrl + Shift + M được kích hoạt");
+
+        var quest = window.getSelection().toString();
+        if (!quest) {
+            console.log("Không có văn bản nào được chọn.");
+            return;
+        }
+
+        var myHeaders = new Headers();
+        myHeaders.append("Content-Type", "application/json");
+
+        var raw = JSON.stringify({
+            "contents": [{
+                "parts": [{ "text": quest }]
+            }],
+            "safetySettings": [{
+                "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+                "threshold": "BLOCK_ONLY_HIGH"
+            }]
+        });
+
+        var requestOptions = {
+            method: 'POST',
+            headers: myHeaders,
+            body: raw,
+            redirect: 'follow'
+        };
+
+        fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=AIzaSyAl9oh2V4H4UXExBwVaj3EUY-s1wldL8uo", requestOptions)
+            .then(response => response.json())
+            .then(result => {
+                console.log("Kết quả API:", result);
+
+                let generatedText = result?.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (!generatedText) {
+                    console.log("Không có nội dung nào được tạo ra.");
+                    return;
+                }
+
+                // 🆕 Chèn một ô code mới ở cuối notebook
+                if (typeof Jupyter !== 'undefined' && Jupyter.notebook) {
+                    var newCell = Jupyter.notebook.insert_cell_at_bottom('code');
+                    newCell.set_text(generatedText.trim());
+
+                    // Scroll đến cell vừa thêm và focus
+                    // Jupyter.notebook.select(Jupyter.notebook.ncells() - 1);
+                    // Jupyter.notebook.scroll_to_bottom();
+                    // newCell.focus_cell();
+
+                    console.log("Đã chèn kết quả vào ô mã cuối cùng.");
+                } else {
+                    console.error("Không tìm thấy đối tượng Jupyter.notebook.");
+                }
+            })
+            .catch(error => {
+                console.error('Lỗi:', error);
+                alert('Có lỗi xảy ra khi gửi yêu cầu hoặc chèn nội dung.');
+            });
+    }
+});
